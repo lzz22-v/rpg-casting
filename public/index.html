@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casting Multiplayer</title>
+    <style>
+        :root { --bg-color: #1a1a1a; --card-bg: #2d2d2d; --text-primary: #ffffff; --p1-color: #ff4d4d; --p2-color: #2ecc71; --accent: #7048e8; --danger: #e74c3c; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; flex-direction: column; height: 100vh; }
+        header { padding: 20px; text-align: center; background: rgba(0,0,0,0.2); }
+        h1 { font-weight: 300; letter-spacing: 1px; text-transform: uppercase; }
+        main { flex: 1; padding: 40px; overflow-y: auto; display: flex; justify-content: center; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 30px; width: 100%; max-width: 1200px; }
+        .character-card { background: var(--card-bg); border-radius: 15px; aspect-ratio: 1/1.3; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; position: relative; padding: 10px; border: 3px solid transparent; }
+        .character-card:hover { transform: translateY(-5px); background: #3d3d3d; }
+        .character-card.owned-p1 { border-color: var(--p1-color); box-shadow: 0 0 15px rgba(255, 77, 77, 0.3); }
+        .character-card.owned-p2 { border-color: var(--p2-color); box-shadow: 0 0 15px rgba(46, 204, 113, 0.3); }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; background-color: #444; margin-bottom: 15px; border: 2px solid #555; }
+        .char-name { font-size: 1.1rem; font-weight: 600; text-align: center; }
+        .owner-badge { position: absolute; top: 10px; right: 10px; width: 12px; height: 12px; border-radius: 50%; display: none; }
+        .owned-p1 .owner-badge { display: block; background: var(--p1-color); }
+        .owned-p2 .owner-badge { display: block; background: var(--p2-color); }
+        .add-card { border: 2px dashed #555; background: transparent; color: #555; }
+        .add-card:hover { border-color: var(--accent); color: var(--accent); }
+        .plus-icon { font-size: 3rem; }
+        footer { background: #252525; padding: 20px; display: flex; justify-content: center; align-items: center; gap: 30px; border-top: 1px solid #333; }
+        .player-toggle { display: flex; background: #111; border-radius: 30px; padding: 5px; gap: 5px; }
+        .p-btn { padding: 10px 20px; border-radius: 25px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; opacity: 0.5; color: #fff; }
+        .p-btn.active { opacity: 1; transform: scale(1.05); }
+        .p1-btn.active { background: var(--p1-color); box-shadow: 0 0 10px var(--p1-color); }
+        .p2-btn.active { background: var(--p2-color); box-shadow: 0 0 10px var(--p2-color); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal { background: var(--card-bg); padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .action-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: white; }
+        .btn-cancel { background: #444; color: white; }
+        .btn-disabled { opacity: 0.3; cursor: not-allowed; background: #444; color: #888; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; }
+        .file-upload-area { border: 2px dashed #444; padding: 20px; margin-bottom: 15px; cursor: pointer; color: #888; }
+        .file-upload-area:hover { border-color: var(--accent); color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Casting Multiplayer</h1>
+    </header>
+
+    <main>
+        <div class="grid-container" id="charGrid"></div>
+    </main>
+
+    <footer>
+        <div style="margin-right: 15px; font-size: 0.9rem; color: #888;">EU SOU O:</div>
+        <div class="player-toggle">
+            <button class="p-btn p1-btn active" onclick="setMyIdentity(1)">Jogador 1</button>
+            <button class="p-btn p2-btn" onclick="setMyIdentity(2)">Jogador 2</button>
+        </div>
+    </footer>
+
+    <div class="modal-overlay" id="actionModal">
+        <div class="modal">
+            <h2 id="modalCharName">...</h2>
+            <img id="modalCharImg" src="" style="width: 80px; height: 80px; border-radius: 50%; margin-bottom: 20px; object-fit:cover;">
+            <button id="btnAssumir" class="action-btn btn-primary" onclick="reqAssume()">Assumir Personagem</button>
+            <button id="btnDeixar" class="action-btn btn-cancel" onclick="reqLeave()">Deixar Personagem</button>
+            <button id="btnExcluir" class="action-btn btn-danger" onclick="reqDelete()">Excluir Personagem</button>
+            <button class="action-btn" style="background:transparent; color:#888" onclick="closeModals()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <h2>Criar Personagem</h2>
+            <input type="text" id="newCharName" placeholder="Nome do Personagem">
+            <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <span id="fileNameDisplay">Clique para enviar foto</span>
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="previewFile()">
+            </div>
+            <img id="imgPreview" src="" style="display:none; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; object-fit:cover;">
+            <button class="action-btn btn-primary" onclick="reqCreate()">Criar</button>
+            <button class="action-btn btn-cancel" onclick="closeModals()">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // --- Conexão Multiplayer ---
+        const socket = io();
+
+        let characters = []; // A lista agora vem do servidor
+        let myIdentity = 1;  // Quem EU sou nesse navegador
+        let selectedCharId = null;
+
+        // 1. Receber atualizações do servidor
+        socket.on('update_list', (serverData) => {
+            console.log('Dados recebidos do servidor:', serverData);
+            characters = serverData;
+            renderGrid();
+        });
+
+        // --- Identidade Local ---
+        function setMyIdentity(id) {
+            myIdentity = id;
+            document.querySelector('.p1-btn').classList.toggle('active', id === 1);
+            document.querySelector('.p2-btn').classList.toggle('active', id === 2);
+            document.querySelector('.p1-btn').style.opacity = id === 1 ? '1' : '0.5';
+            document.querySelector('.p2-btn').style.opacity = id === 2 ? '1' : '0.5';
+            // Se estiver com modal aberto, revalida os botões
+            if(selectedCharId) openActionModal(selectedCharId);
+        }
+
+        // --- Renderização (Igual, mas usa a lista sincronizada) ---
+        function renderGrid() {
+            const grid = document.getElementById('charGrid');
+            grid.innerHTML = '';
+
+            characters.forEach(char => {
+                const div = document.createElement('div');
+                let ownerClass = '';
+                if (char.owner === 1) ownerClass = 'owned-p1';
+                if (char.owner === 2) ownerClass = 'owned-p2';
+
+                div.className = `character-card ${ownerClass}`;
+                div.onclick = () => openActionModal(char.id);
+                div.innerHTML = `
+                    <div class="owner-badge"></div>
+                    <img src="${char.img}" class="avatar" alt="${char.name}">
+                    <span class="char-name">${char.name}</span>
+                `;
+                grid.appendChild(div);
+            });
+
+            const addBtn = document.createElement('div');
+            addBtn.className = 'character-card add-card';
+            addBtn.onclick = openCreateModal;
+            addBtn.innerHTML = `<span class="plus-icon">+</span><span>Novo</span>`;
+            grid.appendChild(addBtn);
+        }
+
+        // --- Ações (Agora enviam pedidos ao servidor) ---
+        
+        function openActionModal(id) {
+            selectedCharId = id;
+            const char = characters.find(c => c.id === id);
+            
+            document.getElementById('modalCharName').innerText = char.name;
+            document.getElementById('modalCharImg').src = char.img;
+            
+            const btnAssumir = document.getElementById('btnAssumir');
+            const btnDeixar = document.getElementById('btnDeixar');
+
+            btnAssumir.style.display = 'block';
+            btnDeixar.style.display = 'none';
+            btnAssumir.className = 'action-btn btn-primary';
+            btnAssumir.disabled = false;
+            btnAssumir.innerText = `Assumir como Jogador ${myIdentity}`;
+
+            // Lógica baseada na Minha Identidade Local vs Dados do Servidor
+            if (char.owner === myIdentity) {
+                btnAssumir.style.display = 'none';
+                btnDeixar.style.display = 'block';
+            } else if (char.owner !== null) {
+                btnAssumir.className = 'action-btn btn-disabled';
+                btnAssumir.innerText = `Ocupado pelo Jogador ${char.owner}`;
+                btnAssumir.disabled = true;
+            }
+
+            document.getElementById('actionModal').style.display = 'flex';
+        }
+
+        function reqAssume() {
+            // Em vez de mudar direto, pede ao servidor
+            socket.emit('claim_character', { charId: selectedCharId, playerId: myIdentity });
+            closeModals();
+        }
+
+        function reqLeave() {
+            socket.emit('release_character', { charId: selectedCharId, playerId: myIdentity });
+            closeModals();
+        }
+
+        function reqDelete() {
+            if(confirm("Excluir personagem para TODOS os jogadores?")) {
+                socket.emit('delete_character', selectedCharId);
+                closeModals();
+            }
+        }
+
+        // --- Criação ---
+        let tempImgUrl = '';
+        function openCreateModal() {
+            document.getElementById('newCharName').value = '';
+            document.getElementById('imgPreview').style.display = 'none';
+            document.getElementById('createModal').style.display = 'flex';
+        }
+
+        function previewFile() {
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempImgUrl = e.target.result;
+                    document.getElementById('imgPreview').src = tempImgUrl;
+                    document.getElementById('imgPreview').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function reqCreate() {
+            const name = document.getElementById('newCharName').value;
+            if (!name) return alert("Nome obrigatório");
+            const img = tempImgUrl || "https://via.placeholder.com/150/555555/ffffff?text=" + name.charAt(0);
+
+            // Envia o objeto do novo personagem para o servidor
+            socket.emit('create_character', { name: name, img: img });
+            
+            closeModals();
+            tempImgUrl = '';
+        }
+
+        function closeModals() {
+            document.getElementById('actionModal').style.display = 'none';
+            document.getElementById('createModal').style.display = 'none';
+            selectedCharId = null;
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) closeModals();
+        }
+    </script>
+</body>
+</html>
