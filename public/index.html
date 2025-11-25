@@ -87,151 +87,162 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // --- Conexão Multiplayer ---
-        const socket = io();
+<script>
+    // --- Conexão Multiplayer ---
+    const socket = io();
 
-        let characters = []; // A lista agora vem do servidor
-        let myIdentity = 1;  // Quem EU sou nesse navegador
-        let selectedCharId = null;
+    let characters = []; // A lista agora vem do servidor
+    let myIdentity = 1;  // Quem EU sou nesse navegador
+    let selectedCharId = null;
 
-        // 1. Receber atualizações do servidor
-        socket.on('update_list', (serverData) => {
-            console.log('Dados recebidos do servidor:', serverData);
-            characters = serverData;
-            renderGrid();
+    // 1. Receber atualizações do servidor
+    socket.on('update_list', (serverData) => {
+        console.log('Dados recebidos do servidor:', serverData);
+        characters = serverData;
+        renderGrid();
+    });
+
+    // --- Identidade Local ---
+    function setMyIdentity(id) {
+        myIdentity = id;
+        document.querySelector('.p1-btn').classList.toggle('active', id === 1);
+        document.querySelector('.p2-btn').classList.toggle('active', id === 2);
+        document.querySelector('.p1-btn').style.opacity = id === 1 ? '1' : '0.5';
+        document.querySelector('.p2-btn').style.opacity = id === 2 ? '1' : '0.5';
+        // Se estiver com modal aberto, revalida os botões
+        if(selectedCharId) openActionModal(selectedCharId);
+    }
+
+    // --- Renderização (Igual, mas usa a lista sincronizada) ---
+    function renderGrid() {
+        const grid = document.getElementById('charGrid');
+        grid.innerHTML = '';
+
+        characters.forEach(char => {
+            const div = document.createElement('div');
+            let ownerClass = '';
+            if (char.owner === 1) ownerClass = 'owned-p1';
+            if (char.owner === 2) ownerClass = 'owned-p2';
+
+            div.className = `character-card ${ownerClass}`;
+            // CORREÇÃO AQUI: Usar char._id do MongoDB
+            div.onclick = () => openActionModal(char._id); 
+            div.innerHTML = `
+                <div class="owner-badge"></div>
+                <img src="${char.img}" class="avatar" alt="${char.name}">
+                <span class="char-name">${char.name}</span>
+            `;
+            grid.appendChild(div);
         });
 
-        // --- Identidade Local ---
-        function setMyIdentity(id) {
-            myIdentity = id;
-            document.querySelector('.p1-btn').classList.toggle('active', id === 1);
-            document.querySelector('.p2-btn').classList.toggle('active', id === 2);
-            document.querySelector('.p1-btn').style.opacity = id === 1 ? '1' : '0.5';
-            document.querySelector('.p2-btn').style.opacity = id === 2 ? '1' : '0.5';
-            // Se estiver com modal aberto, revalida os botões
-            if(selectedCharId) openActionModal(selectedCharId);
-        }
+        const addBtn = document.createElement('div');
+        addBtn.className = 'character-card add-card';
+        addBtn.onclick = openCreateModal;
+        addBtn.innerHTML = `<span class="plus-icon">+</span><span>Novo</span>`;
+        grid.appendChild(addBtn);
+    }
 
-        // --- Renderização (Igual, mas usa a lista sincronizada) ---
-        function renderGrid() {
-            const grid = document.getElementById('charGrid');
-            grid.innerHTML = '';
-
-            characters.forEach(char => {
-                const div = document.createElement('div');
-                let ownerClass = '';
-                if (char.owner === 1) ownerClass = 'owned-p1';
-                if (char.owner === 2) ownerClass = 'owned-p2';
-
-                div.className = `character-card ${ownerClass}`;
-                div.onclick = () => openActionModal(char.id);
-                div.innerHTML = `
-                    <div class="owner-badge"></div>
-                    <img src="${char.img}" class="avatar" alt="${char.name}">
-                    <span class="char-name">${char.name}</span>
-                `;
-                grid.appendChild(div);
-            });
-
-            const addBtn = document.createElement('div');
-            addBtn.className = 'character-card add-card';
-            addBtn.onclick = openCreateModal;
-            addBtn.innerHTML = `<span class="plus-icon">+</span><span>Novo</span>`;
-            grid.appendChild(addBtn);
-        }
-
-        // --- Ações (Agora enviam pedidos ao servidor) ---
+    // --- Ações (Agora enviam pedidos ao servidor) ---
+    
+    function openActionModal(id) {
+        selectedCharId = id;
+        // CORREÇÃO AQUI: Procurar pela propriedade _id (e não c.id)
+        const char = characters.find(c => c._id === id); 
         
-        function openActionModal(id) {
-            selectedCharId = id;
-            const char = characters.find(c => c.id === id);
-            
-            document.getElementById('modalCharName').innerText = char.name;
-            document.getElementById('modalCharImg').src = char.img;
-            
-            const btnAssumir = document.getElementById('btnAssumir');
-            const btnDeixar = document.getElementById('btnDeixar');
-
-            btnAssumir.style.display = 'block';
-            btnDeixar.style.display = 'none';
-            btnAssumir.className = 'action-btn btn-primary';
-            btnAssumir.disabled = false;
-            btnAssumir.innerText = `Assumir como Jogador ${myIdentity}`;
-
-            // Lógica baseada na Minha Identidade Local vs Dados do Servidor
-            if (char.owner === myIdentity) {
-                btnAssumir.style.display = 'none';
-                btnDeixar.style.display = 'block';
-            } else if (char.owner !== null) {
-                btnAssumir.className = 'action-btn btn-disabled';
-                btnAssumir.innerText = `Ocupado pelo Jogador ${char.owner}`;
-                btnAssumir.disabled = true;
-            }
-
-            document.getElementById('actionModal').style.display = 'flex';
+        // Se por algum motivo o char não for encontrado (bug de sincronização, etc.)
+        if (!char) {
+            closeModals();
+            return;
         }
 
-        function reqAssume() {
-            // Em vez de mudar direto, pede ao servidor
-            socket.emit('claim_character', { charId: selectedCharId, playerId: myIdentity });
+        document.getElementById('modalCharName').innerText = char.name;
+        document.getElementById('modalCharImg').src = char.img;
+        
+        const btnAssumir = document.getElementById('btnAssumir');
+        const btnDeixar = document.getElementById('btnDeixar');
+        const btnExcluir = document.getElementById('btnExcluir'); // Adicionei para revalidar exclusão, se necessário
+
+        btnAssumir.style.display = 'block';
+        btnDeixar.style.display = 'none';
+        btnAssumir.className = 'action-btn btn-primary';
+        btnAssumir.disabled = false;
+        btnAssumir.innerText = `Assumir como Jogador ${myIdentity}`;
+
+        // Lógica baseada na Minha Identidade Local vs Dados do Servidor
+        if (char.owner === myIdentity) {
+            btnAssumir.style.display = 'none';
+            btnDeixar.style.display = 'block';
+        } else if (char.owner !== null) {
+            btnAssumir.className = 'action-btn btn-disabled';
+            btnAssumir.innerText = `Ocupado pelo Jogador ${char.owner}`;
+            btnAssumir.disabled = true;
+        }
+
+        document.getElementById('actionModal').style.display = 'flex';
+    }
+
+    function reqAssume() {
+        // Envia o _id do MongoDB para o servidor
+        socket.emit('claim_character', { charId: selectedCharId, playerId: myIdentity });
+        closeModals();
+    }
+
+    function reqLeave() {
+        // Envia o _id do MongoDB para o servidor
+        socket.emit('release_character', { charId: selectedCharId, playerId: myIdentity });
+        closeModals();
+    }
+
+    function reqDelete() {
+        if(confirm("Excluir personagem para TODOS os jogadores?")) {
+            // Envia o _id do MongoDB para o servidor
+            socket.emit('delete_character', selectedCharId);
             closeModals();
         }
+    }
 
-        function reqLeave() {
-            socket.emit('release_character', { charId: selectedCharId, playerId: myIdentity });
-            closeModals();
-        }
+    // --- Criação ---
+    let tempImgUrl = '';
+    function openCreateModal() {
+        document.getElementById('newCharName').value = '';
+        document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('createModal').style.display = 'flex';
+    }
 
-        function reqDelete() {
-            if(confirm("Excluir personagem para TODOS os jogadores?")) {
-                socket.emit('delete_character', selectedCharId);
-                closeModals();
+    function previewFile() {
+        const file = document.getElementById('fileInput').files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempImgUrl = e.target.result;
+                document.getElementById('imgPreview').src = tempImgUrl;
+                document.getElementById('imgPreview').style.display = 'block';
             }
+            reader.readAsDataURL(file);
         }
+    }
 
-        // --- Criação ---
-        let tempImgUrl = '';
-        function openCreateModal() {
-            document.getElementById('newCharName').value = '';
-            document.getElementById('imgPreview').style.display = 'none';
-            document.getElementById('createModal').style.display = 'flex';
-        }
+    function reqCreate() {
+        const name = document.getElementById('newCharName').value;
+        if (!name) return alert("Nome obrigatório");
+        const img = tempImgUrl || "https://via.placeholder.com/150/555555/ffffff?text=" + name.charAt(0);
 
-        function previewFile() {
-            const file = document.getElementById('fileInput').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    tempImgUrl = e.target.result;
-                    document.getElementById('imgPreview').src = tempImgUrl;
-                    document.getElementById('imgPreview').style.display = 'block';
-                }
-                reader.readAsDataURL(file);
-            }
-        }
+        // Envia o objeto do novo personagem para o servidor
+        socket.emit('create_character', { name: name, img: img });
+        
+        closeModals();
+        tempImgUrl = '';
+    }
 
-        function reqCreate() {
-            const name = document.getElementById('newCharName').value;
-            if (!name) return alert("Nome obrigatório");
-            const img = tempImgUrl || "https://via.placeholder.com/150/555555/ffffff?text=" + name.charAt(0);
+    function closeModals() {
+        document.getElementById('actionModal').style.display = 'none';
+        document.getElementById('createModal').style.display = 'none';
+        selectedCharId = null;
+    }
 
-            // Envia o objeto do novo personagem para o servidor
-            socket.emit('create_character', { name: name, img: img });
-            
-            closeModals();
-            tempImgUrl = '';
-        }
-
-        function closeModals() {
-            document.getElementById('actionModal').style.display = 'none';
-            document.getElementById('createModal').style.display = 'none';
-            selectedCharId = null;
-        }
-
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal-overlay')) closeModals();
-        }
-    </script>
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) closeModals();
+    }
+</script>
 </body>
 </html>
