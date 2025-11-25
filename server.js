@@ -368,6 +368,9 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(3000, () => {
-    console.log('Servidor rodando na porta 3000');
+// A porta é definida pelo Render (process.env.PORT) ou usa 3000 localmente.
+const PORT = process.env.PORT || 3000;
+
+http.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
 });
