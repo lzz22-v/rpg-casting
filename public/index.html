@@ -20,29 +20,39 @@
         .grid-wrapper { flex: 1; padding: 20px; overflow-y: auto; display: flex; justify-content: center; }
         .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; width: 100%; }
 
-        /* --- Cards --- */
+        /* --- Cards (Atualizado com Posse/Ativo) --- */
         .character-card { background: var(--card); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; border: 3px solid transparent; position: relative; }
         .character-card:hover { transform: translateY(-3px); background: #3d3d3d; }
-        .character-card.owned-p1 { border-color: var(--p1); box-shadow: 0 0 10px rgba(255, 77, 77, 0.2); }
-        .character-card.owned-p2 { border-color: var(--p2); box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); }
+        
+        /* Personagem Possuído, mas INATIVO (Cor suave) */
+        .character-card.owned-p1 { border-color: rgba(255, 77, 77, 0.4); box-shadow: 0 0 5px rgba(255, 77, 77, 0.1); }
+        .character-card.owned-p2 { border-color: rgba(46, 204, 113, 0.4); box-shadow: 0 0 5px rgba(46, 204, 113, 0.1); }
+        
+        /* Personagem ATIVO (Cor forte/destaque) */
+        .character-card.active-p1 { border-color: var(--p1); box-shadow: 0 0 15px var(--p1); transform: scale(1.03); }
+        .character-card.active-p2 { border-color: var(--p2); box-shadow: 0 0 15px var(--p2); transform: scale(1.03); }
+        
         .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; background: #444; }
         .owner-badge { position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; border-radius: 50%; }
-        .owned-p1 .owner-badge { background: var(--p1); }
-        .owned-p2 .owner-badge { background: var(--p2); }
+        .owned-p1 .owner-badge, .active-p1 .owner-badge { background: var(--p1); }
+        .owned-p2 .owner-badge, .active-p2 .owner-badge { background: var(--p2); }
 
         /* --- Chat Styles --- */
         .chat-header { padding: 15px; background: #111; border-bottom: 1px solid #333; font-weight: bold; }
         .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
-        .message-wrapper { display: flex; align-items: flex-start; gap: 10px; }
+        /* CORREÇÃO DE LAYOUT: Adicionado align-items: center; */
+        .message-wrapper { display: flex; align-items: center; gap: 10px; } 
+        
         .msg-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         
-        .message { padding: 8px 12px; border-radius: 8px; max-width: calc(100% - 45px); font-size: 0.9rem; position: relative; flex-grow: 1; } /* Ajustado max-width */
+        .message { padding: 8px 12px; border-radius: 8px; max-width: calc(100% - 45px); font-size: 0.9rem; position: relative; flex-grow: 1; } 
         .msg-p1 .message { background: rgba(255, 77, 77, 0.15); border-left: 3px solid var(--p1); }
         .msg-p2 .message { background: rgba(46, 204, 113, 0.15); border-left: 3px solid var(--p2); }
-        .message-wrapper.player-2 { justify-content: flex-end; } /* Alinha mensagem do player 2 à direita */
+        .message-wrapper.player-2 { justify-content: flex-end; } 
         
         .msg-sender { font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 3px; opacity: 0.8; }
+        /* Removido margin-bottom de msg-sender, corrigido alinhamento */
         .msg-text { word-wrap: break-word; }
 
         .chat-input-area { padding: 15px; background: #1a1a1a; display: flex; gap: 10px; border-top: 1px solid #333; }
@@ -56,20 +66,21 @@
         .p1-btn.active { background: var(--p1); }
         .p2-btn.active { background: var(--p2); }
 
-        /* --- Modais (Restaurada funcionalidade de imagem) --- */
+        /* --- Modais --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal { background: var(--card); padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); } /* Aumentado max-width */
+        .modal { background: var(--card); padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); } 
         .action-btn { width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-cancel { background: #444; color: white; }
         .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
-        .btn-danger:hover { background: var(--danger); color: white; } /* Adicionado hover */
+        .btn-danger:hover { background: var(--danger); color: white; } 
+        .btn-disabled { background: #555; color: #aaa; cursor: not-allowed; opacity: 0.6; } /* Novo estilo para botão desabilitado */
         .hidden { display: none; }
 
-        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; } /* Ajustado */
-        .file-upload-area { border: 2px dashed #444; padding: 20px; margin-bottom: 15px; cursor: pointer; color: #888; } /* Restaurado */
-        .file-upload-area:hover { border-color: var(--accent); color: white; } /* Restaurado */
-        #imgPreview { display:none; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; object-fit:cover;} /* Restaurado */
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; } 
+        .file-upload-area { border: 2px dashed #444; padding: 20px; margin-bottom: 15px; cursor: pointer; color: #888; } 
+        .file-upload-area:hover { border-color: var(--accent); color: white; } 
+        #imgPreview { display:none; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; object-fit:cover;} 
     </style>
 </head>
 <body>
@@ -99,8 +110,9 @@
         <div class="modal">
             <h2 id="modalName">...</h2>
             <img id="modalImg" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:15px">
-            <button id="btnAssumir" class="action-btn btn-primary" onclick="reqAssume()">Assumir</button>
-            <button id="btnDeixar" class="action-btn btn-cancel" onclick="reqLeave()">Deixar</button>
+            
+            <button id="btnAssumir" class="action-btn btn-primary">Assumir</button> 
+            <button id="btnDeixar" class="action-btn btn-cancel" onclick="reqLeave()">Deixar Posse</button>
             <button id="btnExcluir" class="action-btn btn-danger" onclick="reqDelete()">Excluir</button>
             <button class="action-btn" style="background:transparent; color:#888" onclick="closeModals()">Cancelar</button>
         </div>
@@ -130,7 +142,7 @@
         let selectedCharId = null;
 
         // --- Variáveis para upload de imagem ---
-        let tempImgUrl = ''; // Para guardar a URL da imagem base64 temporariamente
+        let tempImgUrl = ''; 
 
         // --- SOCKET LISTENERS ---
         socket.on('update_list', (data) => {
@@ -138,7 +150,6 @@
             renderGrid();
         });
 
-        // Receber histórico ao conectar
         socket.on('chat_history', (messages) => {
             const box = document.getElementById('chatBox');
             box.innerHTML = '';
@@ -146,7 +157,6 @@
             scrollToBottom();
         });
 
-        // Receber nova mensagem em tempo real
         socket.on('receive_message', (msg) => {
             addMessageToUI(msg);
             scrollToBottom();
@@ -162,24 +172,21 @@
             input.value = '';
         }
 
-        // NOVO: Função para adicionar a mensagem com foto
         async function addMessageToUI(msg) {
             const box = document.getElementById('chatBox');
             const wrapper = document.createElement('div');
             const messageDiv = document.createElement('div');
             const avatarImg = document.createElement('img');
 
-            wrapper.className = `message-wrapper player-${msg.playerId}`;
+            wrapper.className = `message-wrapper player-${msg.playerId} msg-p${msg.playerId}`; // Adiciona classe para estilização de mensagem
             messageDiv.className = `message`;
 
             // --- LÓGICA DA IMAGEM DO CHAT ---
             let charImg = '';
-            // Tenta achar o personagem que o jogador estava usando na hora da mensagem
             const characterAtMessageTime = characters.find(c => c.name === msg.senderName);
             if (characterAtMessageTime) {
                 charImg = characterAtMessageTime.img;
             } else {
-                // Imagem padrão se não estiver interpretando ninguém
                 charImg = msg.playerId === 1 
                     ? 'https://via.placeholder.com/35/ff4d4d/ffffff?text=J1' 
                     : 'https://via.placeholder.com/35/2ecc71/ffffff?text=J2';
@@ -192,7 +199,6 @@
                 <span class="msg-text">${msg.text}</span>
             `;
             
-            // Adiciona avatar à esquerda ou direita dependendo do jogador
             if (msg.playerId === 1) {
                 wrapper.appendChild(avatarImg);
                 wrapper.appendChild(messageDiv);
@@ -223,12 +229,22 @@
             if(selectedCharId) openActionModal(selectedCharId);
         }
 
+        // ATUALIZADO: Renderização com estados 'active' e 'owned'
         function renderGrid() {
             const grid = document.getElementById('charGrid');
             grid.innerHTML = '';
             characters.forEach(char => {
                 const div = document.createElement('div');
-                div.className = `character-card ${char.owner === 1 ? 'owned-p1' : char.owner === 2 ? 'owned-p2' : ''}`;
+                let ownerClass = '';
+                
+                // Lógica de Estilo (Possuído vs Ativo)
+                if (char.owner === 1) {
+                    ownerClass = char.active ? 'active-p1' : 'owned-p1';
+                } else if (char.owner === 2) {
+                    ownerClass = char.active ? 'active-p2' : 'owned-p2';
+                }
+
+                div.className = `character-card ${ownerClass}`;
                 div.onclick = () => openActionModal(char._id);
                 div.innerHTML = `
                     <div class="owner-badge"></div>
@@ -241,20 +257,19 @@
             const add = document.createElement('div');
             add.className = 'character-card';
             add.style.border = '2px dashed #555';
-            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span><span>Novo</span>'; // Adicionado texto "Novo"
+            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span><span>Novo</span>'; 
             add.onclick = () => {
                 document.getElementById('createModal').style.display = 'flex';
-                // Resetar campos do modal de criação
                 document.getElementById('newName').value = '';
-                document.getElementById('fileInput').value = ''; // Limpar input de arquivo
+                document.getElementById('fileInput').value = '';
                 document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
                 document.getElementById('imgPreview').style.display = 'none';
-                tempImgUrl = ''; // Limpar URL temporária
+                tempImgUrl = '';
             };
             grid.appendChild(add);
         }
 
-        // --- Modais ---
+        // ATUALIZADO: Lógica de Modais para Assumir Posse vs. Ativar Interpretação
         function openActionModal(id) {
             selectedCharId = id;
             const char = characters.find(c => c._id === id);
@@ -265,40 +280,67 @@
 
             const btnAssumir = document.getElementById('btnAssumir');
             const btnDeixar = document.getElementById('btnDeixar');
-            const btnExcluir = document.getElementById('btnExcluir'); // Para habilitar/desabilitar exclusão
+            const btnExcluir = document.getElementById('btnExcluir'); 
 
             // Reset
             btnAssumir.style.display = 'none';
             btnDeixar.style.display = 'none';
-            btnExcluir.style.display = 'block'; // Mostrar por padrão
+            btnExcluir.style.display = 'block';
+            btnAssumir.onclick = null; // Limpa a função anterior
 
             if (char.owner === myId) {
-                btnDeixar.style.display = 'block';
-                btnExcluir.disabled = false; // Pode excluir se for o dono
+                // O jogador É O DONO do personagem
+                btnDeixar.style.display = 'block'; // Permite LARGAR a POSSE (reqLeave)
+
+                if (char.active) {
+                    // 1. Já é o dono E é o ATIVO
+                    btnAssumir.style.display = 'block';
+                    btnAssumir.disabled = true;
+                    btnAssumir.className = 'action-btn btn-disabled';
+                    btnAssumir.innerText = `Personagem Ativo`;
+                } else {
+                    // 2. É o dono, mas está INATIVO.
+                    btnAssumir.style.display = 'block';
+                    btnAssumir.disabled = false;
+                    btnAssumir.className = 'action-btn btn-primary';
+                    btnAssumir.innerText = `Interpretar Agora (Ativar)`;
+                    // Define a nova função para ativar a interpretação
+                    btnAssumir.onclick = () => { socket.emit('set_active', { charId: selectedCharId, playerId: myId }); closeModals(); }; 
+                }
+                
+                btnExcluir.disabled = false;
                 btnExcluir.className = 'action-btn btn-danger';
+
             } else if (char.owner === null) {
+                // Personagem Livre
                 btnAssumir.style.display = 'block';
                 btnAssumir.disabled = false;
                 btnAssumir.className = 'action-btn btn-primary';
-                btnAssumir.innerText = `Assumir como J${myId}`;
-                btnExcluir.disabled = false; // Pode excluir se ninguém for o dono
+                btnAssumir.innerText = `Assumir Posse (J${myId})`;
+                btnAssumir.onclick = reqAssume; // Mantém a ação original de POSSE
+                
+                btnExcluir.disabled = false;
                 btnExcluir.className = 'action-btn btn-danger';
+
             } else {
                 // Ocupado por outro
                 btnAssumir.style.display = 'block';
                 btnAssumir.disabled = true;
-                btnAssumir.className = 'action-btn btn-disabled'; // Nova classe para desabilitado
+                btnAssumir.className = 'action-btn btn-disabled';
                 btnAssumir.innerText = `Ocupado por J${char.owner}`;
-                btnExcluir.disabled = true; // Não pode excluir se outro for o dono
+                
+                btnExcluir.disabled = true;
                 btnExcluir.className = 'action-btn btn-disabled';
             }
+            
             document.getElementById('actionModal').style.display = 'flex';
         }
 
+        // Mantém reqAssume e reqLeave para as ações de Posse (agora elas também ativam/desativam)
         function reqAssume() { socket.emit('claim_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
         function reqLeave() { socket.emit('release_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
+        
         function reqDelete() { 
-            // Validação adicional: só o dono ou se estiver livre pode excluir
             const charToDelete = characters.find(c => c._id === selectedCharId);
             if (charToDelete && (charToDelete.owner === myId || charToDelete.owner === null)) {
                 if(confirm("Excluir personagem permanentemente para TODOS os jogadores?")) socket.emit('delete_character', selectedCharId); 
@@ -318,7 +360,7 @@
                 fileNameDisplay.innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    tempImgUrl = e.target.result; // URL base64
+                    tempImgUrl = e.target.result; 
                     imgPreview.src = tempImgUrl;
                     imgPreview.style.display = 'block';
                 }
@@ -341,14 +383,13 @@
             socket.emit('create_character', { name: name, img: img });
             
             closeModals();
-            tempImgUrl = ''; // Limpa para a próxima criação
+            tempImgUrl = ''; 
         }
 
         function closeModals() {
             document.getElementById('actionModal').style.display='none';
             document.getElementById('createModal').style.display='none';
             selectedCharId = null;
-            // Resetar campos do modal de criação ao fechar
             document.getElementById('newName').value = '';
             document.getElementById('fileInput').value = '';
             document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
