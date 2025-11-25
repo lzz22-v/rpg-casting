@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RP Multiplayer</title>
     <style>
-        :root { --bg: #1a1a1a; --card: #2d2d2d; --text: #fff; --p1: #ff4d4d; --p2: #2ecc71; --accent: #7048e8; --danger: #e74c3c; } /* Adicionado --danger */
+        :root { --bg: #1a1a1a; --card: #2d2d2d; --text: #fff; --p1: #ff4d4d; --p2: #2ecc71; --accent: #7048e8; --danger: #e74c3c; } 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         
         body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
         /* --- Layout: Esquerda (Personagens) e Direita (Chat) --- */
         .main-container { flex: 2; display: flex; flex-direction: column; height: 100%; border-right: 1px solid #333; }
-        .chat-container { flex: 1; display: flex; flex-direction: column; background: #222; min-width: 300px; max-width: 450px; } /* Adicionado max-width para melhor responsividade */
+        .chat-container { flex: 1; display: flex; flex-direction: column; background: #222; min-width: 300px; max-width: 450px; }
 
         /* --- Header & Grid --- */
         header { padding: 20px; text-align: center; background: rgba(0,0,0,0.2); }
@@ -178,19 +178,28 @@
             const messageDiv = document.createElement('div');
             const avatarImg = document.createElement('img');
 
-            wrapper.className = `message-wrapper player-${msg.playerId} msg-p${msg.playerId}`; // Adiciona classe para estilização de mensagem
+            wrapper.className = `message-wrapper player-${msg.playerId} msg-p${msg.playerId}`; 
             messageDiv.className = `message`;
 
-            // --- LÓGICA DA IMAGEM DO CHAT ---
+            // --- LÓGICA DA IMAGEM DO CHAT (AJUSTADA) ---
             let charImg = '';
+            // 1. Tenta encontrar o personagem ativo pelo nome que o servidor enviou
             const characterAtMessageTime = characters.find(c => c.name === msg.senderName);
+            
             if (characterAtMessageTime) {
+                // Se achou, usa a URL do personagem (agora é leve, vinda do Cloudinary)
                 charImg = characterAtMessageTime.img;
-            } else {
+            } else if (msg.senderName.startsWith('Jogador')) {
+                // Se for um "Jogador X", usa o placeholder padrão
                 charImg = msg.playerId === 1 
                     ? 'https://via.placeholder.com/35/ff4d4d/ffffff?text=J1' 
                     : 'https://via.placeholder.com/35/2ecc71/ffffff?text=J2';
+            } else {
+                // Caso o personagem tenha sido deletado ou o nome seja incomum, 
+                // usa a URL de placeholder baseada na primeira letra.
+                charImg = `https://via.placeholder.com/35/555555/ffffff?text=${msg.senderName.charAt(0)}`;
             }
+
             avatarImg.src = charImg;
             avatarImg.className = 'msg-avatar';
 
@@ -360,10 +369,12 @@
                 fileNameDisplay.innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    // Guarda o Base64 na variável tempImgUrl
                     tempImgUrl = e.target.result; 
                     imgPreview.src = tempImgUrl;
                     imgPreview.style.display = 'block';
                 }
+                // Lê o arquivo como Base64 (que será enviado ao servidor para otimização no Cloudinary)
                 reader.readAsDataURL(file);
             } else {
                 fileNameDisplay.innerText = 'Clique para enviar foto';
@@ -378,8 +389,12 @@
                 alert("O nome do personagem é obrigatório.");
                 return;
             }
+            // Se tempImgUrl tem Base64, ele envia. 
+            // Se não, envia o placeholder URL, que o servidor salva diretamente.
             const img = tempImgUrl || `https://via.placeholder.com/150/555555/ffffff?text=${name.charAt(0)}`;
 
+            // O servidor (server.js) agora se encarrega de verificar se 'img' é Base64 
+            // e de fazer o upload para o Cloudinary antes de salvar no DB.
             socket.emit('create_character', { name: name, img: img });
             
             closeModals();
