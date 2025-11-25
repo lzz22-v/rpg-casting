@@ -152,8 +152,37 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="actionModal">... Seu modal de ações de personagem ...</div>
-    <div class="modal-overlay" id="createModal">... Seu modal de criação de personagem ...</div>
+    <div class="modal-overlay" id="actionModal">
+        <div class="modal">
+            <h2 id="modalName">Nome do Personagem</h2>
+            <img id="modalImg" class="avatar" style="width: 80px; height: 80px; margin-bottom: 20px; border-radius: 50%;">
+
+            <button class="action-btn btn-primary" id="btnAssumir">Assumir Posse</button>
+            <button class="action-btn btn-primary" id="btnDeixar" onclick="reqLeave()">Deixar Posse</button>
+            
+            <hr style="margin: 15px 0; border-color: #444;">
+
+            <button class="action-btn btn-danger" id="btnExcluir" onclick="reqDelete()">Excluir Personagem</button>
+            <button class="action-btn btn-cancel" onclick="closeModals()">Fechar</button>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <h2>Criar Novo Personagem</h2>
+            <input type="text" id="newName" placeholder="Nome do Personagem" required>
+            
+            <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewFile()">
+                <p id="fileNameDisplay">Clique para enviar foto</p>
+            </div>
+            
+            <img id="imgPreview" src="" alt="Preview da Imagem" style="display:none;">
+
+            <button class="action-btn btn-primary" onclick="reqCreate()">Criar</button>
+            <button class="action-btn btn-cancel" onclick="closeModals()">Cancelar</button>
+        </div>
+    </div>
 
 
     <script src="/socket.io/socket.io.js"></script>
@@ -354,12 +383,6 @@
 
         // --- CÓDIGO DO JOGO ORIGINAL (Mantido e Adaptado para usar 'socket') ---
         
-        // Mantido: setIdentity, sendMessage, addMessageToUI, scrollToBottom, handleEnter
-        // Mantido: renderGrid (e o botão '+ Novo' que abre o modal)
-        // Mantido: openActionModal (com a lógica de posse/ativo)
-        // Mantido: reqAssume, reqLeave, reqDelete (agora usam o 'socket' global)
-        // Mantido: previewFile, reqCreate, closeModals
-
         function setIdentity(id) {
             myId = id;
             document.querySelector('.p1-btn').classList.toggle('active', id===1);
@@ -382,45 +405,45 @@
         }
 
         async function addMessageToUI(msg) {
-             // Lógica de renderização de mensagem (idêntica)
+               // Lógica de renderização de mensagem (idêntica)
             const box = document.getElementById('chatBox');
-            const wrapper = document.createElement('div');
-            const messageDiv = document.createElement('div');
-            const avatarImg = document.createElement('img');
+            const wrapper = document.createElement('div');
+            const messageDiv = document.createElement('div');
+            const avatarImg = document.createElement('img');
 
-            wrapper.className = `message-wrapper player-${msg.playerId} msg-p${msg.playerId}`; 
-            messageDiv.className = `message`;
+            wrapper.className = `message-wrapper player-${msg.playerId} msg-p${msg.playerId}`; 
+            messageDiv.className = `message`;
 
-            let charImg = '';
-            const characterAtMessageTime = characters.find(c => c.name === msg.senderName);
-            
-            if (characterAtMessageTime) {
-                charImg = characterAtMessageTime.img;
-            } else if (msg.senderName.startsWith('Jogador')) {
-                charImg = msg.playerId === 1 
-                    ? 'https://via.placeholder.com/35/ff4d4d/ffffff?text=J1' 
-                    : 'https://via.placeholder.com/35/2ecc71/ffffff?text=J2';
-            } else {
-                charImg = `https://via.placeholder.com/35/555555/ffffff?text=${msg.senderName.charAt(0)}`;
-            }
+            let charImg = '';
+            const characterAtMessageTime = characters.find(c => c.name === msg.senderName);
+            
+            if (characterAtMessageTime) {
+                charImg = characterAtMessageTime.img;
+            } else if (msg.senderName.startsWith('Jogador')) {
+                charImg = msg.playerId === 1 
+                    ? 'https://via.placeholder.com/35/ff4d4d/ffffff?text=J1' 
+                    : 'https://via.placeholder.com/35/2ecc71/ffffff?text=J2';
+            } else {
+                charImg = `https://via.placeholder.com/35/555555/ffffff?text=${msg.senderName.charAt(0)}`;
+            }
 
-            avatarImg.src = charImg;
-            avatarImg.className = 'msg-avatar';
+            avatarImg.src = charImg;
+            avatarImg.className = 'msg-avatar';
 
-            messageDiv.innerHTML = `
-                <span class="msg-sender">${msg.senderName}</span>
-                <span class="msg-text">${msg.text}</span>
-            `;
-            
-            if (msg.playerId === 1) {
-                wrapper.appendChild(avatarImg);
-                wrapper.appendChild(messageDiv);
-            } else {
-                wrapper.appendChild(messageDiv);
-                wrapper.appendChild(avatarImg);
-            }
-            
-            box.appendChild(wrapper);
+            messageDiv.innerHTML = `
+                <span class="msg-sender">${msg.senderName}</span>
+                <span class="msg-text">${msg.text}</span>
+            `;
+            
+            if (msg.playerId === 1) {
+                wrapper.appendChild(avatarImg);
+                wrapper.appendChild(messageDiv);
+            } else {
+                wrapper.appendChild(messageDiv);
+                wrapper.appendChild(avatarImg);
+            }
+            
+            box.appendChild(wrapper);
         }
 
         function scrollToBottom() {
@@ -434,162 +457,164 @@
 
         // --- GAME LOGIC (Grid & Actions) ---
         function renderGrid() {
-            const grid = document.getElementById('charGrid');
-            grid.innerHTML = '';
-            characters.forEach(char => {
-                const div = document.createElement('div');
-                let ownerClass = '';
-                
-                if (char.owner === 1) {
-                    ownerClass = char.active ? 'active-p1' : 'owned-p1';
-                } else if (char.owner === 2) {
-                    ownerClass = char.active ? 'active-p2' : 'owned-p2';
-                }
+            const grid = document.getElementById('charGrid');
+            grid.innerHTML = '';
+            characters.forEach(char => {
+                const div = document.createElement('div');
+                let ownerClass = '';
+                
+                if (char.owner === 1) {
+                    ownerClass = char.active ? 'active-p1' : 'owned-p1';
+                } else if (char.owner === 2) {
+                    ownerClass = char.active ? 'active-p2' : 'owned-p2';
+                }
 
-                div.className = `character-card ${ownerClass}`;
-                div.onclick = () => openActionModal(char._id);
-                div.innerHTML = `
-                    <div class="owner-badge"></div>
-                    <img src="${char.img}" class="avatar">
-                    <span class="char-name">${char.name}</span>
-                `;
-                grid.appendChild(div);
-            });
-            // Botão Novo
-            const add = document.createElement('div');
-            add.className = 'character-card';
-            add.style.border = '2px dashed #555';
-            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span><span>Novo</span>'; 
-            add.onclick = () => {
-                document.getElementById('createModal').style.display = 'flex';
-                document.getElementById('newName').value = '';
-                document.getElementById('fileInput').value = '';
-                document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
-                document.getElementById('imgPreview').style.display = 'none';
-                tempImgUrl = '';
-            };
-            grid.appendChild(add);
+                div.className = `character-card ${ownerClass}`;
+                div.onclick = () => openActionModal(char._id);
+                div.innerHTML = `
+                    <div class="owner-badge"></div>
+                    <img src="${char.img}" class="avatar">
+                    <span class="char-name">${char.name}</span>
+                `;
+                grid.appendChild(div);
+            });
+            // Botão Novo
+            const add = document.createElement('div');
+            add.className = 'character-card';
+            add.style.border = '2px dashed #555';
+            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span><span>Novo</span>'; 
+            add.onclick = () => {
+                // AQUI FOI O ERRO: O modal de criação estava vazio, mas o JavaScript o exibia.
+                // Agora que o modal tem conteúdo, ele deve funcionar.
+                document.getElementById('createModal').style.display = 'flex';
+                document.getElementById('newName').value = '';
+                document.getElementById('fileInput').value = '';
+                document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
+                document.getElementById('imgPreview').style.display = 'none';
+                tempImgUrl = '';
+            };
+            grid.appendChild(add);
         }
 
-        function openActionModal(id) {
-            selectedCharId = id;
-            const char = characters.find(c => c._id === id);
-            if(!char) return closeModals();
+        function openActionModal(id) {
+            selectedCharId = id;
+            const char = characters.find(c => c._id === id);
+            if(!char) return closeModals();
 
-            document.getElementById('modalName').innerText = char.name;
-            document.getElementById('modalImg').src = char.img;
+            document.getElementById('modalName').innerText = char.name;
+            document.getElementById('modalImg').src = char.img;
 
-            const btnAssumir = document.getElementById('btnAssumir');
-            const btnDeixar = document.getElementById('btnDeixar');
-            const btnExcluir = document.getElementById('btnExcluir'); 
+            const btnAssumir = document.getElementById('btnAssumir');
+            const btnDeixar = document.getElementById('btnDeixar');
+            const btnExcluir = document.getElementById('btnExcluir'); 
 
-            btnAssumir.style.display = 'none';
-            btnDeixar.style.display = 'none';
-            btnExcluir.style.display = 'block';
-            btnAssumir.onclick = null; 
+            btnAssumir.style.display = 'none';
+            btnDeixar.style.display = 'none';
+            btnExcluir.style.display = 'block';
+            btnAssumir.onclick = null; 
 
-            if (char.owner === myId) {
-                btnDeixar.style.display = 'block'; 
+            if (char.owner === myId) {
+                btnDeixar.style.display = 'block'; 
 
-                if (char.active) {
-                    btnAssumir.style.display = 'block';
-                    btnAssumir.disabled = true;
-                    btnAssumir.className = 'action-btn btn-disabled';
-                    btnAssumir.innerText = `Personagem Ativo`;
-                } else {
-                    btnAssumir.style.display = 'block';
-                    btnAssumir.disabled = false;
-                    btnAssumir.className = 'action-btn btn-primary';
-                    btnAssumir.innerText = `Interpretar Agora (Ativar)`;
-                    btnAssumir.onclick = () => { socket.emit('set_active', { charId: selectedCharId, playerId: myId }); closeModals(); }; 
-                }
-                
-                btnExcluir.disabled = false;
-                btnExcluir.className = 'action-btn btn-danger';
+                if (char.active) {
+                    btnAssumir.style.display = 'block';
+                    btnAssumir.disabled = true;
+                    btnAssumir.className = 'action-btn btn-disabled';
+                    btnAssumir.innerText = `Personagem Ativo`;
+                } else {
+                    btnAssumir.style.display = 'block';
+                    btnAssumir.disabled = false;
+                    btnAssumir.className = 'action-btn btn-primary';
+                    btnAssumir.innerText = `Interpretar Agora (Ativar)`;
+                    btnAssumir.onclick = () => { socket.emit('set_active', { charId: selectedCharId, playerId: myId }); closeModals(); }; 
+                }
+                
+                btnExcluir.disabled = false;
+                btnExcluir.className = 'action-btn btn-danger';
 
-            } else if (char.owner === null) {
-                btnAssumir.style.display = 'block';
-                btnAssumir.disabled = false;
-                btnAssumir.className = 'action-btn btn-primary';
-                btnAssumir.innerText = `Assumir Posse (J${myId})`;
-                btnAssumir.onclick = reqAssume;
-                
-                btnExcluir.disabled = false;
-                btnExcluir.className = 'action-btn btn-danger';
+            } else if (char.owner === null) {
+                btnAssumir.style.display = 'block';
+                btnAssumir.disabled = false;
+                btnAssumir.className = 'action-btn btn-primary';
+                btnAssumir.innerText = `Assumir Posse (J${myId})`;
+                btnAssumir.onclick = reqAssume;
+                
+                btnExcluir.disabled = false;
+                btnExcluir.className = 'action-btn btn-danger';
 
-            } else {
-                btnAssumir.style.display = 'block';
-                btnAssumir.disabled = true;
-                btnAssumir.className = 'action-btn btn-disabled';
-                btnAssumir.innerText = `Ocupado por J${char.owner}`;
-                
-                btnExcluir.disabled = true;
-                btnExcluir.className = 'action-btn btn-disabled';
-            }
-            
-            document.getElementById('actionModal').style.display = 'flex';
-        }
+            } else {
+                btnAssumir.style.display = 'block';
+                btnAssumir.disabled = true;
+                btnAssumir.className = 'action-btn btn-disabled';
+                btnAssumir.innerText = `Ocupado por J${char.owner}`;
+                
+                btnExcluir.disabled = true;
+                btnExcluir.className = 'action-btn btn-disabled';
+            }
+            
+            document.getElementById('actionModal').style.display = 'flex';
+        }
 
-        function reqAssume() { if(socket) socket.emit('claim_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
-        function reqLeave() { if(socket) socket.emit('release_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
-        
-        function reqDelete() { 
-            if(!socket) return;
-            const charToDelete = characters.find(c => c._id === selectedCharId);
-            if (charToDelete && (charToDelete.owner === myId || charToDelete.owner === null)) {
-                if(confirm("Excluir personagem permanentemente para TODOS os jogadores?")) socket.emit('delete_character', selectedCharId); 
-            } else {
-                alert("Você não pode excluir um personagem que não é seu ou que está sendo usado por outro.");
-            }
-            closeModals(); 
-        }
+        function reqAssume() { if(socket) socket.emit('claim_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
+        function reqLeave() { if(socket) socket.emit('release_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
+        
+        function reqDelete() { 
+            if(!socket) return;
+            const charToDelete = characters.find(c => c._id === selectedCharId);
+            if (charToDelete && (charToDelete.owner === myId || charToDelete.owner === null)) {
+                if(confirm("Excluir personagem permanentemente para TODOS os jogadores?")) socket.emit('delete_character', selectedCharId); 
+            } else {
+                alert("Você não pode excluir um personagem que não é seu ou que está sendo usado por outro.");
+            }
+            closeModals(); 
+        }
 
-        function previewFile() {
-            const file = document.getElementById('fileInput').files[0];
-            const fileNameDisplay = document.getElementById('fileNameDisplay');
-            const imgPreview = document.getElementById('imgPreview');
+        function previewFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const imgPreview = document.getElementById('imgPreview');
 
-            if (file) {
-                fileNameDisplay.innerText = file.name;
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    tempImgUrl = e.target.result; 
-                    imgPreview.src = tempImgUrl;
-                    imgPreview.style.display = 'block';
-                }
-                reader.readAsDataURL(file);
-            } else {
-                fileNameDisplay.innerText = 'Clique para enviar foto';
-                imgPreview.style.display = 'none';
-                tempImgUrl = '';
-            }
-        }
+            if (file) {
+                fileNameDisplay.innerText = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempImgUrl = e.target.result; 
+                    imgPreview.src = tempImgUrl;
+                    imgPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                fileNameDisplay.innerText = 'Clique para enviar foto';
+                imgPreview.style.display = 'none';
+                tempImgUrl = '';
+            }
+        }
 
-        function reqCreate() {
-            if(!socket) return;
-            const name = document.getElementById('newName').value.trim();
-            if (!name) {
-                alert("O nome do personagem é obrigatório.");
-                return;
-            }
-            const img = tempImgUrl || `https://via.placeholder.com/150/555555/ffffff?text=${name.charAt(0)}`;
-            socket.emit('create_character', { name: name, img: img });
-            
-            closeModals();
-            tempImgUrl = ''; 
-        }
+        function reqCreate() {
+            if(!socket) return;
+            const name = document.getElementById('newName').value.trim();
+            if (!name) {
+                alert("O nome do personagem é obrigatório.");
+                return;
+            }
+            const img = tempImgUrl || `https://via.placeholder.com/150/555555/ffffff?text=${name.charAt(0)}`;
+            socket.emit('create_character', { name: name, img: img });
+            
+            closeModals();
+            tempImgUrl = ''; 
+        }
 
-        function closeModals() {
-            document.getElementById('actionModal').style.display='none';
-            document.getElementById('createModal').style.display='none';
-            selectedCharId = null;
-            document.getElementById('newName').value = '';
-            document.getElementById('fileInput').value = '';
-            document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
-            document.getElementById('imgPreview').style.display = 'none';
-            tempImgUrl = '';
-        }
-        window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); }
+        function closeModals() {
+            document.getElementById('actionModal').style.display='none';
+            document.getElementById('createModal').style.display='none';
+            selectedCharId = null;
+            document.getElementById('newName').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
+            document.getElementById('imgPreview').style.display = 'none';
+            tempImgUrl = '';
+        }
+        window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); }
 
     </script>
 </body>
