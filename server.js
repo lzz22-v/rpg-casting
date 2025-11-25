@@ -5,7 +5,7 @@ const io = require('socket.io')(http);
 const mongoose = require('mongoose');
 
 // A URI DE CONEXÃO FINAL COM USUÁRIO E SENHA
-const uri = "mongodb+srv://luizvale132_db_user:R04cTRkJ4GgOYdPb@cluster0.f1nqilb.mongodb.net/project0?retryWrites=true&w=majority";
+const uri = "mongodb+srv://luizvale132_db_user:R04cTRkJ4GgOYdPb@cluster0.flnqilb.mongodb.net/project0?retryWrites=true&w=majority";
 
 // --- 1. CONEXÃO E MODELO ---
 mongoose.connect(uri)
