@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RP Multiplayer</title>
     <style>
-        :root { --bg: #1a1a1a; --card: #2d2d2d; --text: #fff; --p1: #ff4d4d; --p2: #2ecc71; --accent: #7048e8; }
+        :root { --bg: #1a1a1a; --card: #2d2d2d; --text: #fff; --p1: #ff4d4d; --p2: #2ecc71; --accent: #7048e8; --danger: #e74c3c; } /* Adicionado --danger */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
         
         body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
         /* --- Layout: Esquerda (Personagens) e Direita (Chat) --- */
         .main-container { flex: 2; display: flex; flex-direction: column; height: 100%; border-right: 1px solid #333; }
-        .chat-container { flex: 1; display: flex; flex-direction: column; background: #222; min-width: 300px; max-width: 450px; }
+        .chat-container { flex: 1; display: flex; flex-direction: column; background: #222; min-width: 300px; max-width: 450px; } /* Adicionado max-width para melhor responsividade */
 
         /* --- Header & Grid --- */
         header { padding: 20px; text-align: center; background: rgba(0,0,0,0.2); }
@@ -34,9 +34,13 @@
         .chat-header { padding: 15px; background: #111; border-bottom: 1px solid #333; font-weight: bold; }
         .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
-        .message { padding: 8px 12px; border-radius: 8px; max-width: 85%; font-size: 0.9rem; position: relative; }
-        .msg-p1 { background: rgba(255, 77, 77, 0.15); border-left: 3px solid var(--p1); align-self: flex-start; }
-        .msg-p2 { background: rgba(46, 204, 113, 0.15); border-left: 3px solid var(--p2); align-self: flex-end; }
+        .message-wrapper { display: flex; align-items: flex-start; gap: 10px; }
+        .msg-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        
+        .message { padding: 8px 12px; border-radius: 8px; max-width: calc(100% - 45px); font-size: 0.9rem; position: relative; flex-grow: 1; } /* Ajustado max-width */
+        .msg-p1 .message { background: rgba(255, 77, 77, 0.15); border-left: 3px solid var(--p1); }
+        .msg-p2 .message { background: rgba(46, 204, 113, 0.15); border-left: 3px solid var(--p2); }
+        .message-wrapper.player-2 { justify-content: flex-end; } /* Alinha mensagem do player 2 à direita */
         
         .msg-sender { font-size: 0.75rem; font-weight: bold; display: block; margin-bottom: 3px; opacity: 0.8; }
         .msg-text { word-wrap: break-word; }
@@ -52,14 +56,20 @@
         .p1-btn.active { background: var(--p1); }
         .p2-btn.active { background: var(--p2); }
 
-        /* --- Modais (Simplificado) --- */
+        /* --- Modais (Restaurada funcionalidade de imagem) --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal { background: var(--card); padding: 30px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; }
+        .modal { background: var(--card); padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); } /* Aumentado max-width */
         .action-btn { width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-cancel { background: #444; color: white; }
         .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: white; } /* Adicionado hover */
         .hidden { display: none; }
+
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 15px; background: #1a1a1a; border: 1px solid #444; color: white; border-radius: 5px; } /* Ajustado */
+        .file-upload-area { border: 2px dashed #444; padding: 20px; margin-bottom: 15px; cursor: pointer; color: #888; } /* Restaurado */
+        .file-upload-area:hover { border-color: var(--accent); color: white; } /* Restaurado */
+        #imgPreview { display:none; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; object-fit:cover;} /* Restaurado */
     </style>
 </head>
 <body>
@@ -100,6 +110,13 @@
         <div class="modal">
             <h2>Novo Personagem</h2>
             <input type="text" id="newName" placeholder="Nome" style="width:100%; padding:10px; margin-bottom:10px; background:#111; border:1px solid #444; color:white">
+            
+            <div class="file-upload-area" onclick="document.getElementById('fileInput').click()">
+                <span id="fileNameDisplay">Clique para enviar foto</span>
+                <input type="file" id="fileInput" hidden accept="image/*" onchange="previewFile()">
+            </div>
+            <img id="imgPreview" src="" style="display:none; width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; object-fit:cover;">
+
             <button class="action-btn btn-primary" onclick="reqCreate()">Criar</button>
             <button class="action-btn" onclick="closeModals()">Cancelar</button>
         </div>
@@ -112,6 +129,9 @@
         let myId = 1;
         let selectedCharId = null;
 
+        // --- Variáveis para upload de imagem ---
+        let tempImgUrl = ''; // Para guardar a URL da imagem base64 temporariamente
+
         // --- SOCKET LISTENERS ---
         socket.on('update_list', (data) => {
             characters = data;
@@ -121,7 +141,7 @@
         // Receber histórico ao conectar
         socket.on('chat_history', (messages) => {
             const box = document.getElementById('chatBox');
-            box.innerHTML = ''; // Limpa
+            box.innerHTML = '';
             messages.forEach(msg => addMessageToUI(msg));
             scrollToBottom();
         });
@@ -138,24 +158,50 @@
             const text = input.value.trim();
             if (!text) return;
 
-            // Envia apenas o texto e quem é o jogador. 
-            // O SERVIDOR decide qual nome usar baseado no personagem atual.
             socket.emit('send_message', { playerId: myId, text: text });
             input.value = '';
         }
 
-        function addMessageToUI(msg) {
+        // NOVO: Função para adicionar a mensagem com foto
+        async function addMessageToUI(msg) {
             const box = document.getElementById('chatBox');
-            const div = document.createElement('div');
-            // Estiliza diferente se for Jogador 1 ou 2
-            const typeClass = msg.playerId === 1 ? 'msg-p1' : 'msg-p2';
-            
-            div.className = `message ${typeClass}`;
-            div.innerHTML = `
+            const wrapper = document.createElement('div');
+            const messageDiv = document.createElement('div');
+            const avatarImg = document.createElement('img');
+
+            wrapper.className = `message-wrapper player-${msg.playerId}`;
+            messageDiv.className = `message`;
+
+            // --- LÓGICA DA IMAGEM DO CHAT ---
+            let charImg = '';
+            // Tenta achar o personagem que o jogador estava usando na hora da mensagem
+            const characterAtMessageTime = characters.find(c => c.name === msg.senderName);
+            if (characterAtMessageTime) {
+                charImg = characterAtMessageTime.img;
+            } else {
+                // Imagem padrão se não estiver interpretando ninguém
+                charImg = msg.playerId === 1 
+                    ? 'https://via.placeholder.com/35/ff4d4d/ffffff?text=J1' 
+                    : 'https://via.placeholder.com/35/2ecc71/ffffff?text=J2';
+            }
+            avatarImg.src = charImg;
+            avatarImg.className = 'msg-avatar';
+
+            messageDiv.innerHTML = `
                 <span class="msg-sender">${msg.senderName}</span>
                 <span class="msg-text">${msg.text}</span>
             `;
-            box.appendChild(div);
+            
+            // Adiciona avatar à esquerda ou direita dependendo do jogador
+            if (msg.playerId === 1) {
+                wrapper.appendChild(avatarImg);
+                wrapper.appendChild(messageDiv);
+            } else {
+                wrapper.appendChild(messageDiv);
+                wrapper.appendChild(avatarImg);
+            }
+            
+            box.appendChild(wrapper);
         }
 
         function scrollToBottom() {
@@ -195,8 +241,16 @@
             const add = document.createElement('div');
             add.className = 'character-card';
             add.style.border = '2px dashed #555';
-            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span>';
-            add.onclick = () => document.getElementById('createModal').style.display = 'flex';
+            add.innerHTML = '<span style="font-size:3rem; color:#555">+</span><span>Novo</span>'; // Adicionado texto "Novo"
+            add.onclick = () => {
+                document.getElementById('createModal').style.display = 'flex';
+                // Resetar campos do modal de criação
+                document.getElementById('newName').value = '';
+                document.getElementById('fileInput').value = ''; // Limpar input de arquivo
+                document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
+                document.getElementById('imgPreview').style.display = 'none';
+                tempImgUrl = ''; // Limpar URL temporária
+            };
             grid.appendChild(add);
         }
 
@@ -211,25 +265,32 @@
 
             const btnAssumir = document.getElementById('btnAssumir');
             const btnDeixar = document.getElementById('btnDeixar');
+            const btnExcluir = document.getElementById('btnExcluir'); // Para habilitar/desabilitar exclusão
 
             // Reset
             btnAssumir.style.display = 'none';
             btnDeixar.style.display = 'none';
+            btnExcluir.style.display = 'block'; // Mostrar por padrão
 
             if (char.owner === myId) {
                 btnDeixar.style.display = 'block';
+                btnExcluir.disabled = false; // Pode excluir se for o dono
+                btnExcluir.className = 'action-btn btn-danger';
             } else if (char.owner === null) {
                 btnAssumir.style.display = 'block';
                 btnAssumir.disabled = false;
                 btnAssumir.className = 'action-btn btn-primary';
                 btnAssumir.innerText = `Assumir como J${myId}`;
+                btnExcluir.disabled = false; // Pode excluir se ninguém for o dono
+                btnExcluir.className = 'action-btn btn-danger';
             } else {
                 // Ocupado por outro
                 btnAssumir.style.display = 'block';
                 btnAssumir.disabled = true;
-                btnAssumir.className = 'action-btn';
-                btnAssumir.style.background = '#444';
+                btnAssumir.className = 'action-btn btn-disabled'; // Nova classe para desabilitado
                 btnAssumir.innerText = `Ocupado por J${char.owner}`;
+                btnExcluir.disabled = true; // Não pode excluir se outro for o dono
+                btnExcluir.className = 'action-btn btn-disabled';
             }
             document.getElementById('actionModal').style.display = 'flex';
         }
@@ -237,18 +298,62 @@
         function reqAssume() { socket.emit('claim_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
         function reqLeave() { socket.emit('release_character', {charId:selectedCharId, playerId:myId}); closeModals(); }
         function reqDelete() { 
-            if(confirm("Excluir personagem?")) socket.emit('delete_character', selectedCharId); 
+            // Validação adicional: só o dono ou se estiver livre pode excluir
+            const charToDelete = characters.find(c => c._id === selectedCharId);
+            if (charToDelete && (charToDelete.owner === myId || charToDelete.owner === null)) {
+                if(confirm("Excluir personagem permanentemente para TODOS os jogadores?")) socket.emit('delete_character', selectedCharId); 
+            } else {
+                alert("Você não pode excluir um personagem que não é seu ou que está sendo usado por outro.");
+            }
             closeModals(); 
         }
-        function reqCreate() {
-            const name = document.getElementById('newName').value;
-            if(name) socket.emit('create_character', {name, img: `https://via.placeholder.com/150/555555/ffffff?text=${name.charAt(0)}`});
-            closeModals();
+
+        // --- Criação de Personagem (Com Imagem) ---
+        function previewFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const fileNameDisplay = document.getElementById('fileNameDisplay');
+            const imgPreview = document.getElementById('imgPreview');
+
+            if (file) {
+                fileNameDisplay.innerText = file.name;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempImgUrl = e.target.result; // URL base64
+                    imgPreview.src = tempImgUrl;
+                    imgPreview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                fileNameDisplay.innerText = 'Clique para enviar foto';
+                imgPreview.style.display = 'none';
+                tempImgUrl = '';
+            }
         }
+
+        function reqCreate() {
+            const name = document.getElementById('newName').value.trim();
+            if (!name) {
+                alert("O nome do personagem é obrigatório.");
+                return;
+            }
+            const img = tempImgUrl || `https://via.placeholder.com/150/555555/ffffff?text=${name.charAt(0)}`;
+
+            socket.emit('create_character', { name: name, img: img });
+            
+            closeModals();
+            tempImgUrl = ''; // Limpa para a próxima criação
+        }
+
         function closeModals() {
             document.getElementById('actionModal').style.display='none';
             document.getElementById('createModal').style.display='none';
             selectedCharId = null;
+            // Resetar campos do modal de criação ao fechar
+            document.getElementById('newName').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileNameDisplay').innerText = 'Clique para enviar foto';
+            document.getElementById('imgPreview').style.display = 'none';
+            tempImgUrl = '';
         }
         window.onclick = (e) => { if(e.target.classList.contains('modal-overlay')) closeModals(); }
     </script>
