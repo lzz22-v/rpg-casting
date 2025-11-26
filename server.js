@@ -20,9 +20,9 @@ mongoose.connect(uri)
 
 // --- CONFIGURAÇÃO DO CLOUDINARY (Substitua estas chaves) ---
 cloudinary.config({
-    cloud_name: dmdkwkgoi, 
+    cloud_name: "dmdkwkgoi", 
     api_key: 685964722873423,      
-    api_secret: PDbMoEuEePM713_ZF2XMXxEZxIY,  
+    api_secret: "PDbMoEuEePM713_ZF2XMXxEZxIY",  
 });
 
 async function uploadImageToCloudinary(base64) {
