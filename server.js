@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('express'); //sinal
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
@@ -22,7 +22,7 @@ mongoose.connect(uri)
 cloudinary.config({
     cloud_name: dmdkwkgoi, 
     api_key: 685964722873423,      
-    api_secret: PDbMoEuEePM713_ZF2XMXxEZxIY  
+    api_secret: PDbMoEuEePM713_ZF2XMXxEZxIY,  
 });
 
 async function uploadImageToCloudinary(base64) {
