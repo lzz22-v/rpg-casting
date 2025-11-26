@@ -1,16 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <style>
-        /* ... CSS ... */
-    </style>
-</head>
-<body>
-    <div class="full-screen-container" id="authScreen">
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RP Multiplayer - Salas</title>
@@ -36,7 +26,7 @@
             display: flex; 
             height: 100vh; 
             overflow: hidden; 
-            margin: 0; /* Garante que não haja margem branca */
+            margin: 0; 
         }
 
         /* Classes Utilitárias */
@@ -50,7 +40,7 @@
             justify-content: center; 
             align-items: center; 
             background-color: var(--bg); 
-            position: absolute; /* Garante sobreposição correta */
+            position: absolute; 
             top: 0;
             left: 0;
             z-index: 10;
@@ -295,7 +285,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // --- SEU CÓDIGO JAVASCRIPT (MANTIDO E OTIMIZADO) ---
+        // --- SEU CÓDIGO JAVASCRIPT ---
         let socket = null; 
         let characters = [];
         let myId = 1; 
@@ -308,30 +298,62 @@
         let currentRoomId = null; 
         let currentRoomCode = null;
 
-        // Navegação
+        // ✅ CORREÇÃO 1: setScreen mais robusto
         function setScreen(screenId) {
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('roomScreen').classList.add('hidden');
-            document.getElementById('gameScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.add('hidden');
+            try {
+                // 1. Oculta todas as telas
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('roomScreen').classList.add('hidden');
+                document.getElementById('gameScreen').classList.add('hidden');
+                document.getElementById('chatScreen').classList.add('hidden');
 
-            if (screenId === 'game') {
-                document.getElementById('gameScreen').classList.remove('hidden');
-                document.getElementById('chatScreen').classList.remove('hidden');
-            } else {
-                document.getElementById(screenId + 'Screen').classList.remove('hidden');
+                // 2. Exibe a tela correta (ou o par de telas para 'game')
+                if (screenId === 'game') {
+                    document.getElementById('gameScreen').classList.remove('hidden');
+                    document.getElementById('chatScreen').classList.remove('hidden');
+                } else {
+                    const targetScreen = document.getElementById(screenId + 'Screen');
+                    if (targetScreen) {
+                        targetScreen.classList.remove('hidden');
+                    } else {
+                        // 3. Fallback: Se a tela não existir, loga o erro e cai no auth
+                        console.error("Erro: Tela de destino não encontrada:", screenId);
+                        if (screenId !== 'auth') setScreen('auth'); 
+                    }
+                }
+            } catch (error) {
+                // 4. Fallback de segurança: Se algo falhar aqui, garanta que a tela de login apareça
+                console.error("Erro crítico em setScreen:", error);
+                document.getElementById('authScreen').classList.remove('hidden');
             }
         }
 
+        // ✅ CORREÇÃO 2: checkAuthState blindado
         function checkAuthState() {
-            if (currentToken && currentUserId) {
-                document.getElementById('welcomeUsername').innerText = localStorage.getItem('username') || 'Usuário';
-                setScreen('room');
-            } else {
+            try {
+                if (currentToken && currentUserId) {
+                    const username = localStorage.getItem('username') || 'Usuário';
+                    const welcomeMsg = document.getElementById('welcomeUsername');
+                    if (welcomeMsg) welcomeMsg.innerText = username;
+                    
+                    setScreen('room');
+                } else {
+                    setScreen('auth');
+                }
+            } catch (error) {
+                // Em caso de erro (ex: dados corrompidos no localStorage), limpa e força login
+                console.error("Erro ao verificar autenticação. Forçando login:", error);
+                localStorage.clear(); 
+                currentUserId = null;
+                currentToken = null;
                 setScreen('auth');
             }
         }
-        window.onload = checkAuthState;
+        
+        // Pequeno atraso para garantir que todos os elementos HTML foram carregados
+        window.onload = () => {
+            setTimeout(checkAuthState, 100); 
+        };
 
         // Auth
         function toggleAuthMode() {
