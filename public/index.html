@@ -230,7 +230,7 @@
 
     <div class="main-container hidden" id="gameScreen">
         <header>
-            <h1>Mesa de RPG</h1>
+            <h1>RP Chat</h1>
             <div class="room-info"><span id="currentRoomName">Carregando...</span> <span style="margin: 0 10px;">|</span> Código: <strong id="currentRoomCodeDisplay" style="color: var(--accent); user-select: text;">...</strong></div>
         </header>
         <div class="grid-wrapper"><div class="grid-container" id="charGrid"></div></div>
@@ -434,7 +434,7 @@
             currentRoomCode = roomCode;
             document.getElementById('charGrid').innerHTML = ''; 
             initializeSocketConnection(roomCode);
-            setScreen('game');
+            
         }
 
         // Socket
@@ -452,6 +452,7 @@
                 document.getElementById('currentRoomCodeDisplay').innerText = data.roomCode;
                 setIdentity(data.playerId); 
                 document.getElementById('chatBox').innerHTML = ''; 
+                setScreen('game'); 
             });
 
             socket.on('room_error', (message) => {
@@ -483,7 +484,7 @@
             document.querySelector('.p1-btn').classList.toggle('active', id===1);
             document.querySelector('.p2-btn').classList.toggle('active', id===2);
             if(selectedCharId) openActionModal(selectedCharId);
-            if (socket) socket.emit('join_room', { roomCode: currentRoomCode, playerId: myId });
+            
         }
 
         function sendMessage() {
