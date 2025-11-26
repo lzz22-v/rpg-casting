@@ -3,13 +3,13 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const mongoose = require('mongoose');
-
+// NOVO: Importa Cloudinary (Mantido)
+const cloudinary = require('cloudinary').v2;
 // NOVOS IMPORTS DE SEGURANÇA
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// NOVO: Importa Cloudinary (Mantido)
-const cloudinary = require('cloudinary').v2;
+
 
 // --- CONFIGURAÇÃO DO MONGODB ---
 const uri = "mongodb+srv://luizvale132_db_user:R04cTRkJ4GgOYdPb@cluster0.flnqilb.mongodb.net/project0?retryWrites=true&w=majority";
@@ -20,10 +20,24 @@ mongoose.connect(uri)
 
 // --- CONFIGURAÇÃO DO CLOUDINARY (Substitua estas chaves) ---
 cloudinary.config({
-    cloud_name: 'SEU_CLOUD_NAME_AQUI', 
-    api_key: 'SEU_API_KEY_AQUI',      
-    api_secret: 'SEU_API_SECRET_AQUI'  
+    cloud_name: dmdkwkgoi, 
+    api_key: 685964722873423,      
+    api_secret: PDbMoEuEePM713_ZF2XMXxEZxIY  
 });
+
+async function uploadImageToCloudinary(base64) {
+    return new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+            { folder: "characters" },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+            }
+        ).end(
+            base64.replace(/^data:image\/\w+;base64,/, "")
+        );
+    });
+}
 
 // --- MODELOS DE DADOS (SCHEMAS) ---
 

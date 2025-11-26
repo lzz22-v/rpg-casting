@@ -676,7 +676,14 @@
                 document.getElementById('fileNameDisplay').innerText = file.name;
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    tempImgUrl = e.target.result; 
+                    let result = e.target.result;
+
+                    //garante prefixo
+                    if (!result.startsWith("data:image")) {
+                        result = `data:${file.type};base64,${result}`;
+                    }
+
+                    tempImgUrl = result; 
                     document.getElementById('imgPreview').src = tempImgUrl;
                     document.getElementById('imgPreview').style.display = 'block';
                 }
