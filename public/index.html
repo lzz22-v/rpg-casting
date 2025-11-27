@@ -206,59 +206,73 @@ footer { padding: 15px; background: #222; display: flex; justify-content: center
 
 /* ================= RESPONSIVIDADE ================= */
 
-/* Mobile: empilha conteúdo, chat vira inferior */
+/* ================= MOBILE: GRID 3x3 FIXO + SCROLL HORIZONTAL ================= */
+
 @media (max-width: 768px) {
 
+    /* Corrige o empilhamento geral */
     body {
-        display: block;        /* evita problemas com 100vh e teclado em mobile */
+        display: block;
         height: 100%;
+        overflow: hidden;
     }
 
-    /* empilha main + chat */
+    /* Área superior: grid */
     .main-container { 
         width: 100%;
-        height: calc(55vh);   /* parte superior - grid */
+        height: 55vh;
         border-right: none;
         border-bottom: 1px solid #333;
+        overflow: hidden;
     }
 
-    .grid-wrapper { padding: 12px; }
-    .grid-container { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px; max-width: 100%; }
+    /* Wrapper agora vira CARROSSEL */
+    .grid-wrapper {
+        padding: 12px;
+        overflow-x: auto;           /* scroll lateral */
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        display: flex;              /* deixa o grid lado a lado */
+    }
 
-    /* chat fica na parte inferior */
+    /* GRID vira um bloco fixo 3x3 */
+    .grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 colunas */
+        grid-template-rows: repeat(3, auto);   /* 3 linhas */
+        gap: 12px;
+        min-width: 100%;             /* ocupa toda a tela */
+        max-width: 100%;
+        scroll-snap-align: start;
+        padding-bottom: 10px;
+    }
+
+    /* Evita que cards “quebrem” visualmente */
+    .character-card {
+        min-width: unset;
+        width: 100%;
+    }
+
+    /* CHAT continua embaixo */
     .chat-container {
         width: 100%;
-        height: calc(45vh);   /* injeta chat com altura parecida ao mockup */
-        max-height: 50vh;
+        height: 45vh;
         border-left: none;
         border-top: 1px solid #333;
-        position: relative;
     }
 
     .chat-messages {
         padding: 12px;
-        height: calc(45vh - 80px); /* ajusta ao input */
+        height: calc(45vh - 80px);
     }
 
-    .chat-input-area { 
-        padding: 10px; 
-        gap: 8px; 
-    }
-
-    /* ajuste fino de botões/input */
-    #chatInput { padding: 10px; border-radius: 20px; }
-    #sendBtn { padding: 8px 18px; border-radius: 20px; }
-
-    /* evita overflow horizontal */
-    .character-card { min-width: 0; }
-
-    /* suporte para unidades dinâmicas quando o browser implementa dvh */
     @supports (height: 100dvh) {
-        .main-container { height: calc(55dvh); }
-        .chat-container { height: calc(45dvh); }
+        .main-container { height: 55dvh; }
+        .chat-container { height: 45dvh; }
         .chat-messages { height: calc(45dvh - 80px); }
     }
 }
+
 
 /* Tablets: semelhante ao mobile mas com mais espaço */
 @media (min-width: 769px) and (max-width: 1024px) {
